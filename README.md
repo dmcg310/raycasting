@@ -2,4 +2,4 @@
 
 ### References
 
-- ![Raycasting](https://pikuma.com/courses/raycasting-engine-tutorial-algorithm-javascript)
+- [Raycasting](https://pikuma.com/courses/raycasting-engine-tutorial-algorithm-javascript)
