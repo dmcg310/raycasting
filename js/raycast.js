@@ -22,6 +22,18 @@ class Map {
       [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
     ];
   }
+
+  hasWallAt(x, y) {
+    if (x < 0 || x > WINDOW_WIDTH || y < 0 || y > WINDOW_HEIGHT) {
+      return true;
+    }
+
+    let mapGridIndexX = Math.floor(x / TILE_SIZE);
+    let mapGridIndexY = Math.floor(y / TILE_SIZE);
+
+    return this.grid[mapGridIndexY][mapGridIndexX] != 0;
+  }
+
   render() {
     for (let i = 0; i < MAP_NUM_ROWS; i++) {
       for (let j = 0; j < MAP_NUM_COLS; j++) {
@@ -53,22 +65,12 @@ class Player {
     this.rotationAngle += this.turnDirection * this.rotationSpeed;
 
     let moveStep = this.walkDirection * this.moveSpeed;
-    let newX = this.x + Math.cos(this.rotationAngle) * moveStep;
-    let newY = this.y + Math.sin(this.rotationAngle) * moveStep;
+    let newPlayerX = this.x + Math.cos(this.rotationAngle) * moveStep;
+    let newPlayerY = this.y + Math.sin(this.rotationAngle) * moveStep;
 
-    let gridX = Math.floor(newX / TILE_SIZE);
-    let gridY = Math.floor(newY / TILE_SIZE);
-
-    if (
-      gridX >= 0 &&
-      gridX < MAP_NUM_COLS &&
-      gridY >= 0 &&
-      gridY < MAP_NUM_ROWS
-    ) {
-      if (grid.grid[gridY][gridX] == 0) {
-        this.x = newX;
-        this.y = newY;
-      }
+    if (!grid.hasWallAt(newPlayerX, newPlayerY)) {
+      this.x = newPlayerX;
+      this.y = newPlayerY;
     }
   }
 
