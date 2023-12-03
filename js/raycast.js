@@ -287,7 +287,11 @@ function render3DProjectedWalls() {
     // projected wall height
     const wallStripHeight = (TILE_SIZE / rayDistance) * distanceProjectionPlane;
 
-    fill("rgba(255, 255, 255, 1.0)");
+    // compute the transparency based on the wall distance
+    const alpha = 150 / rayDistance;
+
+    // render a rectangle with the calculated wall heigth
+    fill("rgba(255, 255, 255, " + alpha + ")");
     noStroke();
     rect(
       i * WALL_STRIP_WIDTH,
