@@ -19,3 +19,4 @@ Vertical Strips
 ### References
 
 - [P5.js](https://p5js.org/)
+- [SDL](https://www.libsdl.org/)
