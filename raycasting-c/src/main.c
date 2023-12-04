@@ -38,13 +38,45 @@ void destroyWindow() {
   SDL_Quit();
 }
 
+void setup() {
+  // initialise and setup game objects
+}
+
+void processInput() {
+  SDL_Event event;
+  SDL_PollEvent(&event);
+
+  switch (event.type) {
+  case SDL_QUIT: {
+    isGameRunning = FALSE;
+    break;
+  }
+
+  case SDL_KEYDOWN: {
+    if (event.key.keysym.sym == SDLK_ESCAPE) {
+      isGameRunning = FALSE;
+      break;
+    }
+  }
+  }
+}
+
+void render() {
+  SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+  SDL_RenderClear(renderer);
+
+  // render all game objects for the current frame
+
+  SDL_RenderPresent(renderer);
+}
+
 int main(void) {
   isGameRunning = initialiseWindow();
 
-  // setup();
+  setup();
 
   while (isGameRunning) {
-    // processInput();
+    processInput();
     // update();
     // render();
   }
