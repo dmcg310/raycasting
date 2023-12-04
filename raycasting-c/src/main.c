@@ -1,10 +1,9 @@
 #include "constants.h"
-#include <SDL2/SDL.h>
-#include <stdio.h>
 
 SDL_Window *window = NULL;
 SDL_Renderer *renderer = NULL;
 int isGameRunning = FALSE;
+int playerX, playerY;
 
 int initialiseWindow() {
   if (SDL_Init(SDL_INIT_EVERYTHING) != 0) {
@@ -38,9 +37,7 @@ void destroyWindow() {
   SDL_Quit();
 }
 
-void setup() {
-  // initialise and setup game objects
-}
+void setup() { playerX = 0, playerY = 0; }
 
 void processInput() {
   SDL_Event event;
@@ -61,11 +58,18 @@ void processInput() {
   }
 }
 
+void update() {
+  playerX += 1;
+  playerY += 1;
+}
+
 void render() {
   SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
   SDL_RenderClear(renderer);
 
-  // render all game objects for the current frame
+  SDL_SetRenderDrawColor(renderer, 255, 255, 0, 255);
+  SDL_Rect rect = {playerX, playerY, 20, 20};
+  SDL_RenderFillRect(renderer, &rect);
 
   SDL_RenderPresent(renderer);
 }
@@ -77,8 +81,8 @@ int main(void) {
 
   while (isGameRunning) {
     processInput();
-    // update();
-    // render();
+    update();
+    render();
   }
 
   destroyWindow();
