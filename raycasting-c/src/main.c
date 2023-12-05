@@ -30,7 +30,7 @@ struct Player {
 SDL_Window *window = NULL;
 SDL_Renderer *renderer = NULL;
 int isGameRunning = FALSE;
-int ticksLastFrame = 0;
+int ticksLastFrame;
 
 int initialiseWindow() {
   if (SDL_Init(SDL_INIT_EVERYTHING) != 0) {
@@ -67,13 +67,43 @@ void destroyWindow() {
 void setup() {
   player.x = WINDOW_WIDTH / 2.0f;
   player.y = WINDOW_HEIGHT / 2.0f;
-  player.width = 5;
-  player.height = 5;
+  player.width = 1;
+  player.height = 1;
   player.turnDirection = 0;
   player.walkDirection = 0;
   player.rotationAngle = PI / 2;
-  player.walkSpeed = 100;
+  player.walkSpeed = 50;
   player.turnSpeed = 45 * (PI / 180);
+}
+
+void movePlayer(float deltaTime) {
+  player.rotationAngle += player.turnDirection * player.turnSpeed * deltaTime;
+  float moveStep = player.walkDirection * player.walkSpeed * deltaTime;
+
+  float newPlayerX = player.x + cos(player.rotationAngle) * moveStep;
+  float newPlayerY = player.y + sin(player.rotationAngle) * moveStep;
+
+  // perform wall collision
+  player.x = newPlayerX;
+  player.y = newPlayerY;
+}
+
+void renderPlayer() {
+  SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+  SDL_Rect playerRect = {
+      player.x * MINIMAP_SCALE_FACTOR,
+      player.y * MINIMAP_SCALE_FACTOR,
+      player.width * MINIMAP_SCALE_FACTOR,
+      player.height * MINIMAP_SCALE_FACTOR,
+  };
+
+  SDL_RenderFillRect(renderer, &playerRect);
+
+  SDL_RenderDrawLine(
+      renderer, MINIMAP_SCALE_FACTOR * player.x,
+      MINIMAP_SCALE_FACTOR * player.y,
+      MINIMAP_SCALE_FACTOR * player.x + cos(player.rotationAngle) * 40,
+      MINIMAP_SCALE_FACTOR * player.y + sin(player.rotationAngle) * 40);
 }
 
 void renderMap() {
@@ -94,10 +124,10 @@ void renderMap() {
     }
   }
 }
+
 void processInput() {
   SDL_Event event;
   SDL_PollEvent(&event);
-
   switch (event.type) {
   case SDL_QUIT: {
     isGameRunning = FALSE;
@@ -105,10 +135,29 @@ void processInput() {
   }
 
   case SDL_KEYDOWN: {
-    if (event.key.keysym.sym == SDLK_ESCAPE) {
+    if (event.key.keysym.sym == SDLK_ESCAPE)
       isGameRunning = FALSE;
-      break;
-    }
+    if (event.key.keysym.sym == SDLK_UP || event.key.keysym.sym == SDLK_w)
+      player.walkDirection = +1;
+    if (event.key.keysym.sym == SDLK_DOWN || event.key.keysym.sym == SDLK_s)
+      player.walkDirection = -1;
+    if (event.key.keysym.sym == SDLK_RIGHT || event.key.keysym.sym == SDLK_d)
+      player.turnDirection = +1;
+    if (event.key.keysym.sym == SDLK_LEFT || event.key.keysym.sym == SDLK_a)
+      player.turnDirection = -1;
+    break;
+  }
+
+  case SDL_KEYUP: {
+    if (event.key.keysym.sym == SDLK_UP || event.key.keysym.sym == SDLK_w)
+      player.walkDirection = 0;
+    if (event.key.keysym.sym == SDLK_DOWN || event.key.keysym.sym == SDLK_s)
+      player.walkDirection = 0;
+    if (event.key.keysym.sym == SDLK_RIGHT || event.key.keysym.sym == SDLK_d)
+      player.turnDirection = 0;
+    if (event.key.keysym.sym == SDLK_LEFT || event.key.keysym.sym == SDLK_a)
+      player.turnDirection = 0;
+    break;
   }
   }
 }
@@ -119,6 +168,8 @@ void update() {
 
   float deltaTime = (SDL_GetTicks() - ticksLastFrame) / 1000.0f;
   ticksLastFrame = SDL_GetTicks();
+
+  movePlayer(deltaTime);
 }
 
 void render() {
@@ -127,7 +178,7 @@ void render() {
 
   renderMap();
   // renderRays();
-  // renderPlayer();
+  renderPlayer();
 
   SDL_RenderPresent(renderer);
 }
