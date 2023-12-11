@@ -1,5 +1,3 @@
-#include <SDL2/SDL.h>
-
 #define FALSE 0
 #define TRUE 1
 

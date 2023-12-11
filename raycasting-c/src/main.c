@@ -1,4 +1,6 @@
 #include "constants.h"
+#include <SDL2/SDL.h>
+#include <limits.h>
 
 const int map[MAP_NUM_ROWS][MAP_NUM_COLS] = {
     {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
@@ -30,6 +32,7 @@ struct Player
 
 struct Ray
 {
+  float distance;
   float rayAngle;
   float wallHitX;
   float wallHitY;
@@ -153,6 +156,11 @@ float normaliseAngle(float angle)
   return angle;
 }
 
+float distanceBetweenPoints(float x1, float y1, float x2, float y2)
+{
+  return sqrt((x2 - x1) * (x2 - x2) + (y2 - y1) * (y2 - y1));
+}
+
 void castRay(float rayAngle, int stripId)
 {
   rayAngle = normaliseAngle(rayAngle);
@@ -216,38 +224,44 @@ void castRay(float rayAngle, int stripId)
 
   /* VERTICAL RAY-GRID INTERSECTION CODE */
 
-  let foundVertWallHit = false;
-  let vertWallHitX = 0;
-  let vertWallHitY = 0;
+  int foundVertWallHit = FALSE;
+  float vertWallHitX = 0;
+  float vertWallHitY = 0;
+  int vertWallContent = 0;
 
-  // find the x-coordinate of the closest vertical grid intersenction
-  xintercept = Math.floor(player.x / TILE_SIZE) * TILE_SIZE;
-  xintercept += this.isRayFacingRight ? TILE_SIZE : 0;
+  // find the x-coordinate of the closest vertical grid intersection
+  xintercept = floor(player.x / TILE_SIZE) * TILE_SIZE;
+  xintercept += isRayFacingRight ? TILE_SIZE : 0;
 
   // find the y-coordinate of the closest vertical grid intersection
-  yintercept = player.y + (xintercept - player.x) * Math.tan(this.rayAngle);
+  yintercept = player.y + (xintercept - player.x) / tan(rayAngle);
 
   // calculate the increment xstep and ystep
   xstep = TILE_SIZE;
-  xstep *= this.isRayFacingLeft ? -1 : 1;
+  xstep *= isRayFacingLeft ? -1 : 1;
 
-  ystep = TILE_SIZE * Math.tan(this.rayAngle);
-  ystep *= this.isRayFacingUp && ystep > 0 ? -1 : 1;
-  ystep *= this.isRayFacingDown && ystep < 0 ? -1 : 1;
+  ystep = TILE_SIZE / tan(rayAngle);
+  ystep *= isRayFacingUp && xstep > 0 ? -1 : 1;
+  ystep *= isRayFacingDown && xstep < 0 ? -1 : 1;
 
-  let nextVertTouchX = xintercept;
-  let nextVertTouchY = yintercept;
+  float nextVertTouchX = xintercept;
+  float nextVertTouchY = yintercept;
 
   // increment xstep and ystep until we find a wall
   while (nextVertTouchX >= 0 && nextVertTouchX <= WINDOW_WIDTH &&
          nextVertTouchY >= 0 && nextVertTouchY <= WINDOW_HEIGHT)
   {
-    if (grid.hasWallAt(nextVertTouchX - (this.isRayFacingLeft ? 1 : 0),
-                       nextVertTouchY, ))
+    float xToCheck = nextVertTouchX + (isRayFacingLeft ? -1 : 0);
+    float yToCheck = nextVertTouchY;
+
+    if (mapHasWallAt(xToCheck, yToCheck))
     {
-      foundVertWallHit = true;
+      // wall hit
       vertWallHitX = nextVertTouchX;
       vertWallHitY = nextVertTouchY;
+      vertWallContent = map[(int)floor(yToCheck / TILE_SIZE)]
+                           [(int)floor(xToCheck / TILE_SIZE)];
+      foundVertWallHit = TRUE;
       break;
     }
     else
@@ -257,25 +271,39 @@ void castRay(float rayAngle, int stripId)
     }
   }
 
-  // calculate both horizontal and vertical distances and choose the smallest
-  // value
-  let horzHitDistance = foundHorzWallHit
-                            ? distanceBetweenPoints(player.x, player.y,
-                                                    horzWallHitX, horzWallHitY)
-                            : Number.MAX_VALUE;
-  let vertHitDistance = foundVertWallHit
-                            ? distanceBetweenPoints(player.x, player.y,
-                                                    vertWallHitX, vertWallHitY)
-                            : Number.MAX_VALUE;
+  // calculate both horizontal and vertical hit distances and choose the
+  // smallest one
+  float horzHitDistance =
+      foundHorzWallHit ? distanceBetweenPoints(player.x, player.y, horzWallHitX,
+                                               horzWallHitY)
+                       : INT_MAX;
+  float vertHitDistance =
+      foundVertWallHit ? distanceBetweenPoints(player.x, player.y, vertWallHitX,
+                                               vertWallHitY)
+                       : INT_MAX;
 
-  // only store the smallest of the distances
-  this.wallHitX =
-      horzHitDistance < vertHitDistance ? horzWallHitX : vertWallHitX;
-  this.wallHitY =
-      horzHitDistance < vertHitDistance ? horzWallHitY : vertWallHitY;
-  this.distance =
-      horzHitDistance < vertHitDistance ? horzHitDistance : vertHitDistance;
-  this.wasHitVertical = vertHitDistance < horzHitDistance;
+  if (vertHitDistance < horzHitDistance)
+  {
+    rays[stripId].distance = vertHitDistance;
+    rays[stripId].wallHitX = vertWallHitX;
+    rays[stripId].wallHitY = vertWallHitY;
+    rays[stripId].wallHitContent = vertWallContent;
+    rays[stripId].wasHitVertical = TRUE;
+  }
+  else
+  {
+    rays[stripId].distance = horzHitDistance;
+    rays[stripId].wallHitX = horzWallHitX;
+    rays[stripId].wallHitY = horzWallHitY;
+    rays[stripId].wallHitContent = horzWallContent;
+    rays[stripId].wasHitVertical = FALSE;
+  }
+
+  rays[stripId].rayAngle = rayAngle;
+  rays[stripId].isRayFacingDown = isRayFacingDown;
+  rays[stripId].isRayFacingUp = isRayFacingUp;
+  rays[stripId].isRayFacingLeft = isRayFacingLeft;
+  rays[stripId].isRayFacingRight = isRayFacingRight;
 }
 
 void castAllRays()
