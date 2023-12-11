@@ -1,2 +1,4 @@
 *._
 main
+compile_commands.json
+.cache
