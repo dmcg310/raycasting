@@ -15,7 +15,8 @@ const int map[MAP_NUM_ROWS][MAP_NUM_COLS] = {
     {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
     {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}};
 
-struct Player {
+struct Player
+{
   float x;
   float y;
   float width;
@@ -27,13 +28,28 @@ struct Player {
   float turnSpeed;
 } player;
 
+struct Ray
+{
+  float rayAngle;
+  float wallHitX;
+  float wallHitY;
+  int wasHitVertical;
+  int isRayFacingUp;
+  int isRayFacingDown;
+  int isRayFacingLeft;
+  int isRayFacingRight;
+  int wallHitContent;
+} rays[NUM_RAYS];
+
 SDL_Window *window = NULL;
 SDL_Renderer *renderer = NULL;
 int isGameRunning = FALSE;
 int ticksLastFrame;
 
-int initialiseWindow() {
-  if (SDL_Init(SDL_INIT_EVERYTHING) != 0) {
+int initialiseWindow()
+{
+  if (SDL_Init(SDL_INIT_EVERYTHING) != 0)
+  {
     fprintf(stderr, "Error initialising SDL.\n");
     return FALSE;
   }
@@ -42,13 +58,15 @@ int initialiseWindow() {
                             SDL_WINDOWPOS_CENTERED, WINDOW_WIDTH, WINDOW_HEIGHT,
                             SDL_WINDOW_BORDERLESS);
 
-  if (!window) {
+  if (!window)
+  {
     fprintf(stderr, "Error creating SDL window.\n");
     return FALSE;
   }
 
   renderer = SDL_CreateRenderer(window, -1, 0);
-  if (!renderer) {
+  if (!renderer)
+  {
     fprintf(stderr, "Error creating SDL renderer.\n");
     return FALSE;
   }
@@ -58,13 +76,15 @@ int initialiseWindow() {
   return TRUE;
 }
 
-void destroyWindow() {
+void destroyWindow()
+{
   SDL_DestroyRenderer(renderer);
   SDL_DestroyWindow(window);
   SDL_Quit();
 }
 
-void setup() {
+void setup()
+{
   player.x = WINDOW_WIDTH / 2.0f;
   player.y = WINDOW_HEIGHT / 2.0f;
   player.width = 1;
@@ -76,7 +96,8 @@ void setup() {
   player.turnSpeed = 45 * (PI / 180);
 }
 
-int mapHasWallAt(float x, float y) {
+int mapHasWallAt(float x, float y)
+{
   if (x < 0 || x > WINDOW_WIDTH || y < 0 || y > WINDOW_HEIGHT)
     return TRUE;
 
@@ -86,7 +107,8 @@ int mapHasWallAt(float x, float y) {
   return map[mapGridIndeyY][mapGridIndexX] != 0;
 }
 
-void movePlayer(float deltaTime) {
+void movePlayer(float deltaTime)
+{
   player.rotationAngle += player.turnDirection * player.turnSpeed * deltaTime;
   float moveStep = player.walkDirection * player.walkSpeed * deltaTime;
 
@@ -94,13 +116,15 @@ void movePlayer(float deltaTime) {
   float newPlayerY = player.y + sin(player.rotationAngle) * moveStep;
 
   // perform wall collision
-  if (!mapHasWallAt(newPlayerX, newPlayerY)) {
+  if (!mapHasWallAt(newPlayerX, newPlayerY))
+  {
     player.x = newPlayerX;
     player.y = newPlayerY;
   }
 }
 
-void renderPlayer() {
+void renderPlayer()
+{
   SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
   SDL_Rect playerRect = {
       player.x * MINIMAP_SCALE_FACTOR,
@@ -118,9 +142,27 @@ void renderPlayer() {
       MINIMAP_SCALE_FACTOR * player.y + sin(player.rotationAngle) * 40);
 }
 
-void renderMap() {
-  for (int i = 0; i < MAP_NUM_ROWS; i++) {
-    for (int j = 0; j < MAP_NUM_COLS; j++) {
+void castRay(float rayAngle, int stripId) {}
+
+void castAllRays()
+{
+  // start first ray subtracting half of FOV
+  float rayAngle = player.rotationAngle - (FOV_ANGLE / 2);
+
+  for (int stripId = 0; stripId < NUM_RAYS; stripId++)
+  {
+    castRay(rayAngle, stripId);
+
+    rayAngle += FOV_ANGLE / NUM_RAYS;
+  }
+}
+
+void renderMap()
+{
+  for (int i = 0; i < MAP_NUM_ROWS; i++)
+  {
+    for (int j = 0; j < MAP_NUM_COLS; j++)
+    {
       int tileX = j * TILE_SIZE;
       int tileY = i * TILE_SIZE;
       int tileColor = map[i][j] != 0 ? 255 : 0;
@@ -137,16 +179,20 @@ void renderMap() {
   }
 }
 
-void processInput() {
+void processInput()
+{
   SDL_Event event;
   SDL_PollEvent(&event);
-  switch (event.type) {
-  case SDL_QUIT: {
+  switch (event.type)
+  {
+  case SDL_QUIT:
+  {
     isGameRunning = FALSE;
     break;
   }
 
-  case SDL_KEYDOWN: {
+  case SDL_KEYDOWN:
+  {
     if (event.key.keysym.sym == SDLK_ESCAPE)
       isGameRunning = FALSE;
     if (event.key.keysym.sym == SDLK_UP || event.key.keysym.sym == SDLK_w)
@@ -160,7 +206,8 @@ void processInput() {
     break;
   }
 
-  case SDL_KEYUP: {
+  case SDL_KEYUP:
+  {
     if (event.key.keysym.sym == SDLK_UP || event.key.keysym.sym == SDLK_w)
       player.walkDirection = 0;
     if (event.key.keysym.sym == SDLK_DOWN || event.key.keysym.sym == SDLK_s)
@@ -174,7 +221,8 @@ void processInput() {
   }
 }
 
-void update() {
+void update()
+{
   while (!SDL_TICKS_PASSED(SDL_GetTicks(), ticksLastFrame + FRAME_TIME_LENGTH))
     ;
 
@@ -182,9 +230,11 @@ void update() {
   ticksLastFrame = SDL_GetTicks();
 
   movePlayer(deltaTime);
+  castAllRays();
 }
 
-void render() {
+void render()
+{
   SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
   SDL_RenderClear(renderer);
 
@@ -195,12 +245,14 @@ void render() {
   SDL_RenderPresent(renderer);
 }
 
-int main(void) {
+int main(void)
+{
   isGameRunning = initialiseWindow();
 
   setup();
 
-  while (isGameRunning) {
+  while (isGameRunning)
+  {
     processInput();
     update();
     render();
