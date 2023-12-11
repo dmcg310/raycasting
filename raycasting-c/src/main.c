@@ -234,15 +234,15 @@ void castRay(float rayAngle, int stripId)
   xintercept += isRayFacingRight ? TILE_SIZE : 0;
 
   // find the y-coordinate of the closest vertical grid intersection
-  yintercept = player.y + (xintercept - player.x) / tan(rayAngle);
+  yintercept = player.y + (xintercept - player.x) * tan(rayAngle);
 
   // calculate the increment xstep and ystep
   xstep = TILE_SIZE;
   xstep *= isRayFacingLeft ? -1 : 1;
 
-  ystep = TILE_SIZE / tan(rayAngle);
-  ystep *= isRayFacingUp && xstep > 0 ? -1 : 1;
-  ystep *= isRayFacingDown && xstep < 0 ? -1 : 1;
+  ystep = TILE_SIZE * tan(rayAngle);
+  ystep *= isRayFacingUp && ystep > 0 ? -1 : 1;
+  ystep *= isRayFacingDown && ystep < 0 ? -1 : 1;
 
   float nextVertTouchX = xintercept;
   float nextVertTouchY = yintercept;
@@ -341,6 +341,18 @@ void renderMap()
   }
 }
 
+void renderRays()
+{
+  SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
+  for (int i = 0; i < NUM_RAYS; i++)
+  {
+    SDL_RenderDrawLine(renderer, MINIMAP_SCALE_FACTOR * player.x,
+                       MINIMAP_SCALE_FACTOR * player.y,
+                       MINIMAP_SCALE_FACTOR * rays[i].wallHitX,
+                       MINIMAP_SCALE_FACTOR * rays[i].wallHitY);
+  }
+}
+
 void processInput()
 {
   SDL_Event event;
@@ -355,7 +367,7 @@ void processInput()
 
   case SDL_KEYDOWN:
   {
-    if (event.key.keysym.sym == SDLK_ESCAPE)
+    if (event.key.keysym.sym == SDLK_ESCAPE || event.key.keysym.sym == SDLK_q)
       isGameRunning = FALSE;
     if (event.key.keysym.sym == SDLK_UP || event.key.keysym.sym == SDLK_w)
       player.walkDirection = +1;
@@ -401,7 +413,7 @@ void render()
   SDL_RenderClear(renderer);
 
   renderMap();
-  // renderRays();
+  renderRays();
   renderPlayer();
 
   SDL_RenderPresent(renderer);
