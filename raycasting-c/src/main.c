@@ -1,6 +1,5 @@
 #include "constants.h"
 #include <SDL2/SDL.h>
-#include <limits.h>
 
 const int map[MAP_NUM_ROWS][MAP_NUM_COLS] = {
     {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
@@ -84,6 +83,9 @@ int initialiseWindow()
 
 void destroyWindow()
 {
+  free(colorBuffer);
+
+  SDL_DestroyTexture(colorBufferTexture);
   SDL_DestroyRenderer(renderer);
   SDL_DestroyWindow(window);
   SDL_Quit();
@@ -285,11 +287,11 @@ void castRay(float rayAngle, int stripId)
   float horzHitDistance =
       foundHorzWallHit ? distanceBetweenPoints(player.x, player.y, horzWallHitX,
                                                horzWallHitY)
-                       : INT_MAX;
+                       : FLT_MAX;
   float vertHitDistance =
       foundVertWallHit ? distanceBetweenPoints(player.x, player.y, vertWallHitX,
                                                vertWallHitY)
-                       : INT_MAX;
+                       : FLT_MAX;
 
   if (vertHitDistance < horzHitDistance)
   {
